@@ -8,29 +8,26 @@ import { Adapter, FetchOptions, FetchResultV2, FetchV2 } from "../../adapters/ty
 import { CHAIN } from "../../helpers/chains";
 import { httpGet } from "../../utils/fetchURL";
 
-const DEFILLAMA_DAILY_VOLUME_URL = "http://localhost:3000/defillama/dailyVolume";
+const DEFILLAMA_DAILY_VOLUME_URL = "https://api.swapkit.dev/auth/defillama/dailyVolume";
 
-const SwapKitChains: Partial<Record<string, string>> = {
-  [CHAIN.ETHEREUM]: "ethereum",
-  [CHAIN.ARBITRUM]: "arbitrum",
-  [CHAIN.AVAX]: "avalanche",
-  [CHAIN.BASE]: "base",
-  [CHAIN.BSC]: "bsc",
-  [CHAIN.OPTIMISM]: "optimism",
-  [CHAIN.POLYGON]: "polygon",
-  [CHAIN.BITCOIN]: "bitcoin",
-  [CHAIN.THORCHAIN]: "thorchain",
-  [CHAIN.SOLANA]: "solana",
-  [CHAIN.XDAI]: "gnosis",
-  [CHAIN.LINEA]: "linea",
-  [CHAIN.SONIC]: "sonic",
-  [CHAIN.TRON]: "tron",
-  [CHAIN.TON]: "ton",
-  [CHAIN.SUI]: "sui",
-  [CHAIN.XRPL]: "ripple",
-  [CHAIN.MAYA]: "mayachain",
-  [CHAIN.COSMOS]: "cosmos",
-};
+// The api serves DeFiLlama chain slugs directly as breakdownByChain keys, so the
+// adapter just needs the list of chains it reports. Keep in sync with api-v2's
+// SWAPKIT_TO_DEFILLAMA_CHAIN_MAP values.
+const chains = [
+  // EVM
+  CHAIN.ETHEREUM, CHAIN.ARBITRUM, CHAIN.AVAX, CHAIN.BASE, CHAIN.BSC,
+  CHAIN.OPTIMISM, CHAIN.POLYGON, CHAIN.AURORA, CHAIN.BERACHAIN, CHAIN.XDAI,
+  CHAIN.XLAYER, CHAIN.MONAD, CHAIN.CRONOS,
+  // UTXO
+  CHAIN.BITCOIN, CHAIN.BITCOIN_CASH, CHAIN.LITECOIN, CHAIN.DOGE, CHAIN.DASH, CHAIN.ZEC,
+  // Cosmos
+  CHAIN.THORCHAIN, CHAIN.MAYA, CHAIN.COSMOS, CHAIN.KUJIRA,
+  // Other L1s
+  CHAIN.SOLANA, CHAIN.CARDANO, CHAIN.POLKADOT, CHAIN.RIPPLE, CHAIN.TRON,
+  CHAIN.NEAR, CHAIN.SUI, CHAIN.TON, CHAIN.RADIXDLT, CHAIN.STARKNET,
+  // Chainflip
+  CHAIN.CHAINFLIP,
+];
 
 
 
@@ -68,7 +65,7 @@ const prefetch = async (_: FetchOptions): Promise<FetchResultV2> => {
 
 const adapter: Adapter = {
   version: 2,
-  adapter: Object.fromEntries(Object.keys(SwapKitChains).map((chain) => [chain, { fetch }])),
+  adapter: Object.fromEntries(chains.map((chain) => [chain, { fetch }])),
   prefetch,
 };
 
