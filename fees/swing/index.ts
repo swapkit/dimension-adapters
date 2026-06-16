@@ -1,7 +1,7 @@
 import { CHAIN } from "../../helpers/chains";
 import { httpGet } from "../../utils/fetchURL";
 import { FetchOptions, SimpleAdapter } from "../../adapters/types";
-import { getUniqStartOfTodayTimestamp } from "../../helpers/getUniSubgraphFees";
+import { getUniqStartOfTodayTimestamp } from "../../helpers/getUniSubgraphVolume";
 
 const baseURL = 'https://swap.prod.swing.xyz'
 const chains: Record<string, string> = {
@@ -40,7 +40,7 @@ const chains: Record<string, string> = {
     [CHAIN.ZKSYNC]: 'zksync-era',
 };
 
-const fetch = async (_a: any, _b: any, options: FetchOptions) => {
+const fetch = async (options: FetchOptions) => {
     const unixTimestamp = getUniqStartOfTodayTimestamp(
         new Date(options.startOfDay * 1000)
     );

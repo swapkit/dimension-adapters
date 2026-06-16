@@ -1,8 +1,16 @@
+import { FetchOptions, SimpleAdapter } from "../adapters/types";
+import { CHAIN } from '../helpers/chains';
+import { ICurveDexConfig, ContractVersion, getCurveDexData } from "../helpers/curve";
 
-import { CHAIN } from "../helpers/chains";
-import { ICurveDexConfig, ContractVersion, getCurveExport } from "../helpers/curve";
+const METRIC = {
+  SWAP_FEES: 'Token Swap Fees',
+  PROTOCOL_REVENUE: 'Swap Fees To Protocol',
+  HOLDERS_REVENUE: 'Swap Fees To Holders',
+  LP_REVENUE: 'Swap Fees To Liquidity Providers',
+  BUY_BACK_AND_BURN: 'Buy Back And Burn CAKE',
+}
 
-const PancakeStableswapConfigs: {[key: string]: ICurveDexConfig} = {
+const PancakeStableswapConfigs: { [key: string]: ICurveDexConfig } = {
   [CHAIN.BSC]: {
     start: '2020-09-06',
     customPools: {
@@ -34,20 +42,57 @@ const PancakeStableswapConfigs: {[key: string]: ICurveDexConfig} = {
       ]
     }
   }
-}
+};
 
-const stableSwapMethodology = {
-  UserFees: "User pays 0.25% fees on each swap.",
-  ProtocolRevenue: "Treasury receives 10% of the fees.",
-  SupplySideRevenue: "LPs receive 50% of the fees.",
-  HoldersRevenue: "A 40% of the fees is used to facilitate CAKE buyback and burn.",
-  Revenue: "Revenue is 50% of the fees paid by users.",
-  Fees: "All fees comes from the user fees, which is 0.25% of each trade."
-}
+const adapter: SimpleAdapter = {
+  version: 2,
+  pullHourly: true,
+  chains: Object.keys(PancakeStableswapConfigs),
+  fetch: async function (options: FetchOptions) {
+    const { dailyVolume, swapFees, adminFees } = await getCurveDexData(options, PancakeStableswapConfigs[options.chain])
 
+    const dailyRevenue = options.createBalances()
+    dailyRevenue.add(adminFees.clone(0.2), METRIC.PROTOCOL_REVENUE) // 10% from admin fees
+    dailyRevenue.add(adminFees.clone(0.8), METRIC.HOLDERS_REVENUE) // 40% from admin fees
 
-const adapter = getCurveExport(PancakeStableswapConfigs)
+    const lpFees = swapFees.clone(1)
+    lpFees.subtract(adminFees)
 
-adapter.methodology = stableSwapMethodology;
+    return {
+      dailyVolume,
+      dailyFees: swapFees.clone(1, METRIC.SWAP_FEES),
+      dailyRevenue,
+      dailyProtocolRevenue: adminFees.clone(0.2, METRIC.PROTOCOL_REVENUE),
+      dailySupplySideRevenue: lpFees.clone(1, METRIC.LP_REVENUE),
+      dailyHoldersRevenue: adminFees.clone(0.8, METRIC.BUY_BACK_AND_BURN),
+    };
+  },
+  methodology: {
+    UserFees: "User pays 0.25% fees on each swap.",
+    ProtocolRevenue: "Treasury receives 10% of the fees.",
+    SupplySideRevenue: "LPs receive 50% of the fees.",
+    HoldersRevenue: "A 40% of the fees is used to facilitate CAKE buyback and burn.",
+    Revenue: "Revenue is 50% of the fees paid by users.",
+    Fees: "All fees comes from the user fees, which is 0.25% of each trade."
+  },
+  breakdownMethodology: {
+    Fees: {
+      [METRIC.SWAP_FEES]: 'User pays 0.25% fees on each swap',
+    },
+    Revenue: {
+      [METRIC.PROTOCOL_REVENUE]: 'Treasury receives 10% of the fees.',
+      [METRIC.HOLDERS_REVENUE]: '0.0575% is used to facilitate CAKE buyback and burn.',
+    },
+    ProtocolRevenue: {
+      [METRIC.PROTOCOL_REVENUE]: 'Treasury receives 10% of the fees.',
+    },
+    SupplySideRevenue: {
+      [METRIC.LP_REVENUE]: 'LPs receive 50% of the fees.',
+    },
+    HoldersRevenue: {
+      [METRIC.BUY_BACK_AND_BURN]: 'A 40% of the fees is used to facilitate CAKE buyback and burn.',
+    },
+  }
+};
 
 export default adapter;
